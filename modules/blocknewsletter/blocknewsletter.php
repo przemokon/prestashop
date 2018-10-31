@@ -33,6 +33,7 @@ class Blocknewsletter extends Module
 	const CUSTOMER_NOT_REGISTERED = 0;
 	const GUEST_REGISTERED = 1;
 	const CUSTOMER_REGISTERED = 2;
+	public $isNotRegistred;
 
 	public function __construct()
 	{
@@ -40,7 +41,7 @@ class Blocknewsletter extends Module
 		$this->tab = 'front_office_features';
 		$this->need_instance = 0;
 
-		$this->controllers = array('verification');
+		$this->controllers = array('verification','unsubscribe');
 
 		$this->bootstrap = true;
 		parent::__construct();
@@ -63,6 +64,8 @@ class Blocknewsletter extends Module
 		);
 
 		$this->_searched_email = null;
+
+		$this->isNotRegistred = $this->l('You have already unsubscribed from our newsletter.');
 
 		$this->_html = '';
 		if ($this->id)
@@ -146,7 +149,7 @@ class Blocknewsletter extends Module
 
 	public function uninstall()
 	{
-		Db::getInstance()->execute('DROP TABLE IF EXISTS '._DB_PREFIX_.'newsletter_lang');
+		//Db::getInstance()->execute('DROP TABLE IF EXISTS '._DB_PREFIX_.'newsletter_lang');
 
 		return parent::uninstall();
 	}
@@ -362,38 +365,14 @@ class Blocknewsletter extends Module
 	 */
 	public function newsletterRegistration()
 	{
-		$postcode = $_GET['postcode'];
-		$has_country = isset($this->context->cookie->iso_code_country) && $this->context->cookie->iso_code_country;
-		$id_country = $has_country && !Validate::isLanguageIsoCode($this->context->cookie->iso_code_country) ? (int)Country::getByIso(strtoupper($this->context->cookie->iso_code_country)) : (int)Tools::getCountry();
-		$country = new Country($id_country, (int)$this->context->cookie->id_lang);
-
 		if (empty($_GET['email']) || !Validate::isEmail($_GET['email']))
 			return $this->error = $this->l('Invalid email address.');
 
-		elseif (empty($postcode) && $country->need_zip_code)
-		return $this->error = $this->l('Postcode is required.');
+		if (!empty($_GET['postcode']) && !Validate::isPostCode($_GET['postcode']))
+			return $this->error = $this->l('Invalid postcode format.');
 
-		elseif ($postcode && !Validate::isPostCode($postcode))
-		return $this->error = $this->l('Invalid postcode format.');
-
-		elseif ($country->zip_code_format && !$country->checkZipCode($postcode))
-		return $this->error = $this->l('Invalid postcode format.');
-
-		/* Unsubscription */
-		else if ($_GET['action'] == '1')
-		{
-			$register_status = $this->isNewsletterRegistered($_GET['email']);
-
-			if ($register_status < 1)
-				return $this->error = $this->l('This email address is not registered.');
-
-			if (!$this->unregister($_GET['email'], $register_status))
-				return $this->error = $this->l('An error occurred while attempting to unsubscribe.');
-
-			return $this->valid = $this->l('Unsubscription successful.');
-		}
 		/* Subscription */
-		else if ($_GET['action'] == '0')
+		if ($_GET['action'] == '0')
 		{
 			$register_status = $this->isNewsletterRegistered($_GET['email']);
 			if ($register_status > 0)
@@ -517,9 +496,9 @@ class Blocknewsletter extends Module
 	protected function unregister($email, $register_status)
 	{
 		if ($register_status == self::GUEST_REGISTERED)
-			$sql = 'DELETE FROM '._DB_PREFIX_.'newsletter WHERE `email` = \''.pSQL($_GET['email']).'\' AND id_shop = '.$this->context->shop->id;
+			$sql = 'DELETE FROM '._DB_PREFIX_.'newsletter WHERE `email` = \''.pSQL($email).'\' AND id_shop = '.$this->context->shop->id;
 		else if ($register_status == self::CUSTOMER_REGISTERED)
-			$sql = 'UPDATE '._DB_PREFIX_.'customer SET `newsletter` = 0 WHERE `email` = \''.pSQL($_GET['email']).'\' AND id_shop = '.$this->context->shop->id;
+			$sql = 'UPDATE '._DB_PREFIX_.'customer SET `newsletter` = 0 WHERE `email` = \''.pSQL($email).'\' AND id_shop = '.$this->context->shop->id;
 
 		if (!isset($sql) || !Db::getInstance()->execute($sql))
 			return false;
@@ -642,8 +621,7 @@ class Blocknewsletter extends Module
 	{
 		$sql = 'SELECT `email`
 				FROM `'._DB_PREFIX_.'newsletter`
-				WHERE MD5(CONCAT( `email` , `newsletter_date_add`, \''.pSQL(Configuration::get('NW_SALT')).'\')) = \''.pSQL($token).'\'
-				AND `active` = 0';
+				WHERE MD5(CONCAT( `email` , `newsletter_date_add`, "'.pSQL(Configuration::get('NW_SALT')).'")) = "'.pSQL($token).'"';
 
 		return Db::getInstance()->getValue($sql);
 	}
@@ -673,11 +651,11 @@ class Blocknewsletter extends Module
 	{
 		$sql = 'SELECT `email`
 				FROM `'._DB_PREFIX_.'customer`
-				WHERE MD5(CONCAT( `email` , `date_add`, \''.pSQL(Configuration::get('NW_SALT')).'\')) = \''.pSQL($token).'\'
-				AND `newsletter` = 0';
+				WHERE MD5(CONCAT( `email` , `date_add`, "'.pSQL(Configuration::get('NW_SALT')).'")) = "'.pSQL($token).'"';
 
 		return Db::getInstance()->getValue($sql);
 	}
+
 
 	/**
 	 * Return a token associated to an user
@@ -751,8 +729,7 @@ class Blocknewsletter extends Module
 		return $this->l('Thank you for subscribing to our newsletter.');
 	}
 
-
-		/**
+	/**
 	 * Get id customer by email
 	 *
 	 * @param string $email
@@ -897,7 +874,7 @@ class Blocknewsletter extends Module
 		$this->context->controller->addCSS($this->_path.'blocknewsletter.css', 'all');
 		$this->context->controller->addJS(_PS_JS_DIR_.'validate.js');
 		$this->context->controller->addJS($this->_path.'blocknewsletter.js');
-		$this->context->controller->addJqueryPlugin('cooki-plugin');
+		$this->context->controller->addJqueryPlugin(['cooki-plugin', 'fancybox']);
 	}
 
 	/**
@@ -913,8 +890,7 @@ class Blocknewsletter extends Module
 		//we delete it from blocknewsletter table to prevent duplicates
 		$id_shop = $params['newCustomer']->id_shop;
 		$email = $params['newCustomer']->email;
-		$postcode = $params['newCustomer']->postcode;
-		if (Validate::isEmail($email) || Validate::isPostCode($postcode))
+		if (Validate::isEmail($email))
 			return (bool)Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'newsletter WHERE id_shop='.(int)$id_shop.' AND email=\''.pSQL($email)."'");
 
 		return true;
@@ -1259,11 +1235,75 @@ class Blocknewsletter extends Module
 	}
 
 
+	protected function getRegisterToken($email, $register_status)
+	{
+		if ($register_status == self::GUEST_REGISTERED)
+		{
+			$sql = 'SELECT MD5(CONCAT( `email` , `newsletter_date_add`, "'.pSQL(Configuration::get('NW_SALT')).'")) as token
+					FROM `'._DB_PREFIX_.'newsletter`
+					WHERE `active` = 1
+					AND `email` = \''.pSQL($email).'\'';
+		}
+		else if ($register_status == self::CUSTOMER_REGISTERED)
+		{
+			$sql = 'SELECT MD5(CONCAT( `email` , `date_add`, "'.pSQL(Configuration::get('NW_SALT')).'")) as token
+					FROM `'._DB_PREFIX_.'customer`
+					WHERE `newsletter` = 1
+					AND `email` = \''.pSQL($email).'\'';
+		}
+
+		return Db::getInstance()->getValue($sql);
+	}
+
+	/**
+	 * Ends the registration process to the newsletter
+	 *
+	 * @param string $token
+	 *
+	 * @return string
+	 */
+	public function unregisterEmail($token)
+	{
+
+		if($email = $this->getUserEmailByToken($token)) {
+
+			$register_status = $this->isNewsletterRegistered($email);
+			$this->unregister($email, $register_status);
+			return $this->l('Your email has been removed form our newsletter');
+				
+		} elseif ($email = $this->getGuestEmailByToken($token)) {
+
+			$register_status = $this->isNewsletterRegistered($email);
+			$this->unregister($email, $register_status);
+			return $this->l('Your email has been removed form our newsletter');
+		}
+
+		return $this->l('This email dont exists in our newsletter');
+		
+	}
+
 	public function prepareUnregisterLink($email) {
 
-		return	$_SERVER['HTTP_HOST'].'/?email='.$email.'&action=1';
+		$register_status = $this->isNewsletterRegistered($email);
+		$token = $this->getRegisterToken($email, $register_status);
+
+		return Context::getContext()->link->getModuleLink(
+			'blocknewsletter', 'unsubscribe', array(
+			'token' => $token,
+			)
+		);
 
 	}
+
+	public function sendUnsubscribeEmail($email) {
+
+		if(Mail::Send($this->context->language->id, 'newsletter_unsubscribe', Mail::l('Unsubscribe link', $this->context->language->id), 
+			array('{unsubscribe_link}' => $this->prepareUnregisterLink($email)), pSQL($email), null, null, null, null, null, dirname(__FILE__).'/mails/', false, $this->context->shop->id))
+			return $this->l('A message with a link confirming the unsubscription was sent.');
+		else 
+			return false;
+
+	}	
 
 }
  

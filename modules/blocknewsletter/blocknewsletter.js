@@ -1,3 +1,23 @@
+
+ $(document).on('submit', '#unsubsribe-form', function(e){
+    e.preventDefault();
+    
+   var dataForm = $(this).serialize();        
+
+    $.ajax({
+        type: 'GET',
+        url: this_path + 'blocknewsletter-unsubscribe.php',
+        data: dataForm,
+        dataType:"json", 
+        success: function(jsonData) {
+    		$('.unsubscribe-content').html('<p class="lead text-center">' + jsonData.msg + '</p>');
+        }
+    });
+
+
+});
+
+
 $(document).ready(function() {
 
   $('.newsletter-form button').on('click', function() {
@@ -11,11 +31,6 @@ $(document).ready(function() {
         e.preventDefault();
         var obj;
         var self = $(this);
-
-        console.log($('#newsletter-input').val());
-        console.log($('.postcode').val());
-        console.log($('.id_gender').val());
-        console.log(validate_isEmail(self.find('#newsletter-input').val()));
    
         if(validate_isEmail(self.find('#newsletter-input').val()) && ($.cookie('newsletter_subscribed') == null))
         {

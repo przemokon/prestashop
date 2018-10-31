@@ -184,3 +184,8 @@
 #footer #newsletter_block_left .has-success .form-group .btn-sm span {
     background: #4CAF50;
 }
+
+
+.unsubscribe {
+  display: none;
+}
