@@ -39,7 +39,8 @@
 		<thead>
 			<tr>
 				<th class="fixed-width-xs"><span class="title_box">{l s='Selected'}</span></th>
-				<th><span class="title_box">{l s='Supplier Name'}</span></th>
+				<th class="fixed-width-xxl"><span class="title_box">{l s='Supplier Name'}</span></th>
+				<th><span>{l s='Supplier Description'}</span></th>
 				<th class="fixed-width-xs"><span class="title_box">{l s='Default'}</span></th>
 			</tr>
 		</thead>
@@ -48,6 +49,7 @@
 			<tr>
 				<td><input type="checkbox" class="supplierCheckBox" name="check_supplier_{$supplier['id_supplier']}" {if $supplier['is_selected'] == true}checked="checked"{/if} value="{$supplier['id_supplier']}" /></td>
 				<td>{$supplier['name']}</td>
+				<td>{$supplier['description']}</td>
 				<td><input type="radio" id="default_supplier_{$supplier['id_supplier']}" name="default_supplier" value="{$supplier['id_supplier']}" {if $supplier['is_selected'] == false}disabled="disabled"{/if} {if $supplier['is_default'] == true}checked="checked"{/if} /></td>
 			</tr>
 		{/foreach}
