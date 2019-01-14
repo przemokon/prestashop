@@ -3,7 +3,7 @@
 	<name>mproductcomments</name>
 	<displayName><![CDATA[Product Comments]]></displayName>
 	<version><![CDATA[3.6.1]]></version>
-	<description><![CDATA[Allows users to post reviews.]]></description>
+	<description><![CDATA[Allows users to post reviews and rate products on specific criteria.]]></description>
 	<author><![CDATA[PrestaShop modified by Mirjan24]]></author>
 	<tab><![CDATA[front_office_features]]></tab>
 	<is_configurable>1</is_configurable>
