@@ -1,4 +1,9 @@
-public function processDuplicate()
+<?php
+
+class AdminProductsController extends AdminProductsControllerCore
+{
+
+    public function processDuplicate()
     {
         if (Validate::isLoadedObject($product = new Product((int)Tools::getValue('id_product')))) {
             $id_product_old = $product->id;
@@ -46,13 +51,16 @@ public function processDuplicate()
                     }
                     $this->redirect_after = self::$currentIndex.(Tools::getIsset('id_category') ? '&id_category='.(int)Tools::getValue('id_category') : '').'&conf=19&token='.$this->token;
                 }
+
+                Product::duplicateWebrotate($id_product_old, $product->id);
+                
             } else {
                 $this->errors[] = Tools::displayError('An error occurred while creating an object.');
             }
         }
     }
 
-public function ajaxProcessCheckEAN13()
+    public function ajaxProcessCheckEAN13()
     {
         $ean = Tools::getValue('ean');
         $id_attribute = Tools::getValue('id_attribute');
