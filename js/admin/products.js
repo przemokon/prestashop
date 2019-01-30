@@ -324,6 +324,34 @@ product_tabs['Combinations'] = new function(){
 		}
 	};
 
+	this.CheckEAN13 = function (url) {
+		$('#attribute_ean13').on('blur', function () {
+			$.ajax({
+				url: url,
+				data: {
+					ean: $(this).val(),
+					action: 'CheckEAN13',
+					ajax: true
+				},
+				context: document.body,
+				dataType: 'json',
+				context: this,
+				success: function (data) {
+					if (data.count >= 1) {
+						var ean_alert = $('#ean-alert');
+						if (ean_alert.length == 0) {
+							$(this).parent().parent().addClass('has-error');
+							$(this).after("<div class='text-danger' id='ean-alert'>" + ean_msg + " (" + data.products + ")</div>");
+						}
+						$('#ean-alert').fadeIn();
+					} else {
+						$('#ean-alert').fadeOut().remove();
+					}
+				}
+			});
+		});
+	};
+
 	this.defaultProductAttribute = function(url, item){
 		$.ajax({
 			url: url,
@@ -353,6 +381,7 @@ product_tabs['Combinations'] = new function(){
 			e.preventDefault();
 			self.defaultProductAttribute(this.href, this);
 		});
+		self.CheckEAN13(this.href);
 	};
 
 	this.deleteProductAttribute = function(url, parent){

@@ -80,6 +80,7 @@
 		var update_success_msg = '{l s='Update successful' js=1}';
 		var errorLogin = '{l s='PrestaShop was unable to log in to Addons. Please check your credentials and your Internet connection.' js=1}';
 		var search_product_msg = '{l s='Search for a product' js=1}';
+		var ean_msg = '{l s='This EAN13 oder JAN Barcode is found in other products.' js=1}';
 	</script>
 {/if}
 {if isset($css_files)}
