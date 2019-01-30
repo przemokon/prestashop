@@ -13,6 +13,8 @@ public function processDuplicate()
             }
             unset($product->id);
             unset($product->id_product);
+            unset($product->meta_title);
+            unset($product->meta_description);
             $product->indexed = 0;
             $product->active = 0;
             if ($product->add()
