@@ -324,25 +324,43 @@ product_tabs['Combinations'] = new function(){
 		}
 	};
 
-	this.CheckEAN13 = function (url) {
-		$('#attribute_ean13').on('blur', function () {
+	this.checkEAN13 = function(url) {
+		$('#attribute_ean13').on('blur', function() {
 			$.ajax({
 				url: url,
 				data: {
 					ean: $(this).val(),
+					id_attribute: $('#id_product_attribute').val(),
 					action: 'CheckEAN13',
 					ajax: true
 				},
 				context: document.body,
 				dataType: 'json',
 				context: this,
-				success: function (data) {
+				success: function(data) {
+					console.log(data);
+					var ean_alert = $('#ean-alert');
 					if (data.count >= 1) {
-						var ean_alert = $('#ean-alert');
-						if (ean_alert.length == 0) {
-							$(this).parent().parent().addClass('has-error');
-							$(this).after("<div class='text-danger' id='ean-alert'>" + ean_msg + " (" + data.products + ")</div>");
-						}
+						var products = data.products;
+						products = products.toString();
+						productsIds = products.replace(/,/g, ', ');
+						var alert_content = "<div class='text-warning' id='ean-alert'>" + ean_msg + " (<span id='p_count'>" + productsIds + "</span>)</div>";
+							if (ean_alert.length == 0) {
+								$(this).parent().parent().addClass('has-warning');
+								$(this).after(alert_content);
+							} else {
+								ean_alert.html(ean_msg + " (<span id='p_count'>" + productsIds + "</span>)");
+							}
+						$('#ean-alert').fadeIn();
+					} else if (data.duplicates >= 1) {
+						var alert_content = "<div class='text-warning' id='ean-alert'>" + ean_duplicate_msg + " </div>"
+							$(this).val('');
+							if (ean_alert.length == 0) {
+								$(this).parent().parent().addClass('has-warning');
+								$(this).after(alert_content);
+							} else {
+								ean_alert.html(ean_duplicate_msg);
+							}
 						$('#ean-alert').fadeIn();
 					} else {
 						$('#ean-alert').fadeOut().remove();
@@ -351,6 +369,7 @@ product_tabs['Combinations'] = new function(){
 			});
 		});
 	};
+
 
 	this.defaultProductAttribute = function(url, item){
 		$.ajax({
